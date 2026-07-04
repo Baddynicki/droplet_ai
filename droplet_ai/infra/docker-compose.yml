@@ -1,0 +1,29 @@
+version: "3.9"
+
+services:
+  postgres:
+    image: ankane/pgvector   # Postgres with pgvector preinstalled[web:26]
+    container_name: droplet-postgres
+    environment:
+      POSTGRES_DB: ide_db #db name
+      POSTGRES_USER: root #id
+      POSTGRES_PASSWORD: 1234 #pass
+    ports:
+      - "5432:5432"
+    volumes:
+      - postgres_data:/var/lib/postgresql/data
+      - ./init.sql:/docker-entrypoint-initdb.d/init.sql
+    restart: unless-stopped
+
+  redis:
+    image: redis:7
+    container_name: droplet-redis
+    ports:
+      - "6379:6379"
+    volumes:
+      - redis_data:/data
+    restart: unless-stopped
+
+volumes:
+  postgres_data:
+  redis_data:

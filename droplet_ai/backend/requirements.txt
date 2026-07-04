@@ -1,0 +1,10 @@
+fastapi
+uvicorn[standard]
+sqlalchemy[asyncio]
+asyncpg
+redis
+pydantic
+python-dotenv
+gitpython
+psycopg2-binary    # optional
+httpx             # for LLM API calls
