@@ -1,0 +1,26 @@
+# Virtual environment
+backend/.venv/
+
+# Python
+__pycache__/
+*.py[cod]
+
+# Environment variables
+.env
+.env.*
+
+# IDE
+.vscode/
+.idea/
+
+# Test/cache
+.pytest_cache/
+.mypy_cache/
+.ruff_cache/
+
+# Cloned repositories
+backend/repos/
+
+# OS files
+.DS_Store
+Thumbs.db

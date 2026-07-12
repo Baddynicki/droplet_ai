@@ -3,6 +3,7 @@ CREATE EXTENSION IF NOT EXISTS vector;
 
 -- Basic tables for MVP
 
+--analysis jobs table
 CREATE TABLE IF NOT EXISTS analysis_jobs (
   id UUID PRIMARY KEY,
   repo_url TEXT NOT NULL,
@@ -12,6 +13,7 @@ CREATE TABLE IF NOT EXISTS analysis_jobs (
   updated_at TIMESTAMPTZ NOT NULL DEFAULT NOW()
 );
 
+--history events table
 CREATE TABLE IF NOT EXISTS history_events (
   id UUID PRIMARY KEY,
   job_id UUID NOT NULL REFERENCES analysis_jobs(id) ON DELETE CASCADE,
@@ -23,6 +25,8 @@ CREATE TABLE IF NOT EXISTS history_events (
   created_at TIMESTAMPTZ NOT NULL DEFAULT NOW()
 );
 
+
+--method schema 
 CREATE TABLE IF NOT EXISTS method_schemas (
   id UUID PRIMARY KEY,
   job_id UUID NOT NULL REFERENCES analysis_jobs(id) ON DELETE CASCADE,
@@ -30,5 +34,16 @@ CREATE TABLE IF NOT EXISTS method_schemas (
   branch TEXT NOT NULL,
   schema_yaml TEXT NOT NULL,
   schema_json JSONB NOT NULL,
+  created_at TIMESTAMPTZ NOT NULL DEFAULT NOW()
+);
+
+
+--code structures table
+CREATE TABLE IF NOT EXISTS code_structures (
+  id UUID PRIMARY KEY,
+  job_id UUID NOT NULL REFERENCES analysis_jobs(id) ON DELETE CASCADE,
+  repo_url TEXT NOT NULL,
+  branch TEXT NOT NULL,
+  structure_json JSONB NOT NULL,
   created_at TIMESTAMPTZ NOT NULL DEFAULT NOW()
 );
