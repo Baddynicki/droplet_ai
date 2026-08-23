@@ -24,3 +24,6 @@ backend/repos/
 # OS files
 .DS_Store
 Thumbs.db
+
+history-summariser example.xlsx
+iitg_tp3.pptx

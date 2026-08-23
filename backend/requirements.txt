@@ -8,3 +8,5 @@ python-dotenv
 gitpython
 psycopg2-binary    # optional
 httpx             # for LLM API calls
+google-genai
+openai>=1.34.0
