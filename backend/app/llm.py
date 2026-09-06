@@ -110,23 +110,97 @@ client = AsyncOpenAI(
 # Pick any OpenRouter model you like
 MODEL = "poolside/laguna-s-2.1:free"
 
+MAX_HISTORY_EVENTS = 12
+MAX_FILES_PER_EVENT = 10
+MAX_DIFF_SUMMARY_CHARS = 1_200
+
+MAX_STRUCTURE_FILES = 80
+MAX_STRUCTURE_MODULES = 40
+MAX_STRUCTURE_CLASSES = 40
+MAX_STRUCTURE_FUNCTIONS = 60
+
+
+def truncate_text(value: Any, limit: int) -> str:
+    text = str(value or "")
+
+    if len(text) <= limit:
+        return text
+
+    return text[:limit] + "... [truncated]"
+
+
+def compact_history_event(event: Dict[str, Any]) -> Dict[str, Any]:
+    files_touched = event.get("files_touched") or []
+
+    if not isinstance(files_touched, list):
+        files_touched = [str(files_touched)]
+
+    return {
+        "commit_id": str(event.get("commit_id", "")),
+        "timestamp": str(event.get("timestamp", "")),
+        "files_touched": [
+            str(file_name)
+            for file_name in files_touched[:MAX_FILES_PER_EVENT]
+        ],
+        "diff_summary": truncate_text(
+            event.get("diff_summary", ""),
+            MAX_DIFF_SUMMARY_CHARS,
+        ),
+    }
+
+
+def compact_history_events(history_events: Any) -> list[Dict[str, Any]]:
+    if not isinstance(history_events, list):
+        return []
+
+    return [
+        compact_history_event(event)
+        for event in history_events[:MAX_HISTORY_EVENTS]
+        if isinstance(event, dict)
+    ]
+
+
+def compact_structure(structure_json: Any) -> Dict[str, Any]:
+    if not isinstance(structure_json, dict):
+        return {}
+
+    files = structure_json.get("files") or []
+    modules = structure_json.get("modules") or []
+    classes = structure_json.get("classes") or []
+    functions = structure_json.get("functions") or []
+
+    return {
+        "files": files[:MAX_STRUCTURE_FILES]
+        if isinstance(files, list)
+        else [],
+        "modules": modules[:MAX_STRUCTURE_MODULES]
+        if isinstance(modules, list)
+        else [],
+        "classes": classes[:MAX_STRUCTURE_CLASSES]
+        if isinstance(classes, list)
+        else [],
+        "functions": functions[:MAX_STRUCTURE_FUNCTIONS]
+        if isinstance(functions, list)
+        else [],
+    }
 
 async def summarise_history_event(e: dict) -> Dict[str, Any]:
+    event = compact_history_event(e)
     prompt = f"""
 You are a senior engineer explaining why a code change exists.
 
-Commit ID: {e['commit_id']}
-Timestamp: {e['timestamp']}
-Files touched: {e['files_touched']}
-Diff summary: {e['diff_summary']}
+Commit ID: {event['commit_id']}
+Timestamp: {event['timestamp']}
+Files touched: {", ".join(event['files_touched'])}
+Diff summary: {event['diff_summary']}
 
-Explain:
-- The reason for this change (business/technical context).
-- Classify the change as bugfix, refactor, feature, performance, infra, etc.
-- Any risks or follow-up work implied.
+Return one valid JSON object only:
 
-Return a JSON object with keys:
-reason, type, risk.
+{{
+    "reason": "short explanation, maximum 2 sentences",
+    "type": "bugfix|feature|refactor|performance|infra|docs|test|chore|unknown",
+    "risk": "low|medium|high"
+}}
 """.strip()
 
     completion = await client.chat.completions.create(
@@ -169,6 +243,20 @@ async def extract_method_schema(
         structure_json,
         history_events,
 ) -> Dict[str, Any]:
+    compact_code = compact_structure(structure_json)
+    compact_history = compact_history_events(history_events)
+
+    code_context = json.dumps(
+        compact_code,
+        ensure_ascii=False,
+        separators=(",", ":"),
+    )
+
+    history_context = json.dumps(
+        compact_history,
+        ensure_ascii=False,
+        separators=(",", ":"),
+    )
     prompt = f"""
 You are extracting a machine-readable methodology from a software repository.
 
@@ -176,10 +264,10 @@ Repo: {repo_url}
 Branch: {branch}
 
 Code structure:
-{json.dumps(structure_json)[:120000]}
+{code_context}
 
-History events:
-{json.dumps(history_events)[:120000]}
+Recent history:
+{history_context}
 
 Return valid JSON only with this shape:
 {{
@@ -209,11 +297,11 @@ Return valid JSON only with this shape:
 }}
 
 Rules:
-- Infer the actual method or pipeline implemented by the repository.
-- Prefer code_refs grounded in the provided structure.
-- Use history_refs only where they add real rationale.
-- Do not return markdown.
-- Return valid JSON only.
+- Return JSON only; no Markdown.
+- Include 3 to 8 steps.
+- Use only code references and history references shown above.
+- Keep fields concise.
+- Use no more than 8 code_refs and 3 history_refs per step.
 """.strip()
     completion = await client.chat.completions.create(
         model=MODEL,
