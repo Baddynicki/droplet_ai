@@ -1,0 +1,99 @@
+{
+  "name": "repo-summariser",
+  "displayName": "Repo Summariser",
+  "description": "History-aware method extraction",
+  "version": "0.0.1",
+  "publisher": "bhavya",
+  "engines": {
+    "vscode": "^1.125.0"
+  },
+  "categories": [
+    "Other"
+  ],
+  "activationEvents": [],
+  "main": "./out/extension.js",
+  "contributes": {
+    "commands": [
+      {
+        "command": "repo-summariser.analyzeCurrentRepo",
+        "title": "Repo Summariser: Analyze Current Repo"
+      },
+      {
+        "command": "repo-summariser.showHistory",
+        "title": "Repo Summariser: Show History"
+      },
+      {
+        "command": "repo-summariser.showMethods",
+        "title": "Repo Summariser: Show Methods"
+      },
+      {
+        "command": "repo-summariser.runFullPipeline",
+        "title": "Repo Summariser: Run Full Pipeline"
+      }
+    ],
+    "viewsContainers": {
+      "activitybar": [
+        {
+          "id": "repo-summariser-sidebar",
+          "title": "Repo Summariser",
+          "icon": "media/repo-summariser-icon.svg"
+        }
+      ]
+    },
+    "views": {
+      "repo-summariser-sidebar": [
+        {
+          "type": "webview",
+          "id": "repoSummariser.historyView",
+          "name": "History",
+          "contextualTitle": "Repo Summariser History",
+          "icon": "media/repo-summariser-icon.svg",
+          "when": "repoSummariser.jobIdSet"
+        },
+        {
+          "type": "webview",
+          "id": "repoSummariser.methodsView",
+          "name": "Methods",
+          "contextualTitle": "Repo Summariser Methods",
+          "icon": "media/repo-summariser-icon.svg",
+          "when": "repoSummariser.jobIdSet"
+        }
+      ]
+    }
+  },
+  "configuration": {
+    "title": "Repo Summariser",
+    "properties": {
+      "repoSummariser.backendUrl": {
+        "type": "string",
+        "default": "http://localhost:8000",
+        "description": "Base URL of the Repo Summariser backend API"
+      }
+    }
+  },
+  "scripts": {
+    "vscode:prepublish": "npm run compile",
+    "compile": "tsc -p ./",
+    "watch": "tsc -watch -p ./",
+    "pretest": "npm run compile && npm run lint",
+    "lint": "eslint src",
+    "test": "vscode-test"
+  },
+  "devDependencies": {
+    "@types/mocha": "^10.0.10",
+    "@types/node": "^24.13.3",
+    "@types/vscode": "^1.125.0",
+    "@vscode/test-cli": "^0.0.15",
+    "@vscode/test-electron": "^3.0.0",
+    "eslint": "^10.5.0",
+    "typescript": "^6.0.3",
+    "typescript-eslint": "^8.61.1"
+  },
+  "dependencies": {
+    "axios": "^1.7.0"
+  },
+  "overrides": {
+    "diff": "^8.0.4",
+    "serialize-javascript": "^7.0.6"
+  }
+}
