@@ -35,6 +35,10 @@ POST /analyze
 POST /analysis/{jobId}/run-all
 GET  /analysis/{jobId}/history
 GET  /analysis/{jobId}/methods
+POST /analysis/{jobId}/papers
+GET  /analysis/{jobId}/papers
+POST /analysis/{jobId}/paper-adaptations
+GET  /analysis/{jobId}/paper-adaptations
 ```
 
 ## Project structure
@@ -124,6 +128,9 @@ Open the Command Palette with `Ctrl+Shift+P` and run one of these commands.
 | `Repo Summariser: Run Full Pipeline` | Re-runs the history and method-extraction pipeline for the latest analysis job. |
 | `Repo Summariser: Show History` | Opens the History panel for the latest analysis job. |
 | `Repo Summariser: Show Methods` | Opens the Methods panel for the latest analysis job. |
+| `Repo Summariser: Upload Research Paper` | Selects one to three PDFs and attaches them to the latest analysis job. |
+| `Repo Summariser: Adapt Paper to Current Repo` | Selects extracted papers and collects the requested dataset or parameter changes. |
+| `Repo Summariser: View Paper Adaptations` | Opens evidence-linked implementation recommendations for the latest analysis job. |
 | `Repo Summariser: Focus on History View` | Focuses the contributed History view, if configured in the extension manifest. |
 | `Repo Summariser: Focus on Methods View` | Focuses the contributed Methods view, if configured in the extension manifest. |
 

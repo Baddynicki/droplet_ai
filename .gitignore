@@ -12,6 +12,11 @@ __pycache__/
 # IDE
 .vscode/
 .idea/
+docs/
+#extension
+extension/node_modules
+extension/out
+extension/.vscode-test.mjs
 
 # Test/cache
 .pytest_cache/
@@ -20,10 +25,13 @@ __pycache__/
 
 # Cloned repositories
 backend/repos/
+backend/storage/
 
 # OS files
 .DS_Store
 Thumbs.db
 
+#miscellaneous
 history-summariser example.xlsx
 iitg_tp3.pptx
+Repo summary extn.mp4

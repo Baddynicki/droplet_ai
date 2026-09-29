@@ -91,6 +91,7 @@ Return a JSON object with keys: reason, type, risk.
     
 import json
 import os
+import re
 from typing import Any, Dict
 
 from dotenv import load_dotenv
@@ -127,6 +128,17 @@ def truncate_text(value: Any, limit: int) -> str:
         return text
 
     return text[:limit] + "... [truncated]"
+
+
+def parse_json_response(value: str) -> Dict[str, Any]:
+    """Accept JSON returned with an accidental Markdown fence, but nothing else."""
+    cleaned = value.strip()
+    if cleaned.startswith("```"):
+        cleaned = re.sub(r"^```(?:json)?\s*|\s*```$", "", cleaned).strip()
+    parsed = json.loads(cleaned)
+    if not isinstance(parsed, dict):
+        raise ValueError("Model response must be a JSON object")
+    return parsed
 
 
 def compact_history_event(event: Dict[str, Any]) -> Dict[str, Any]:
@@ -312,6 +324,111 @@ Rules:
         },
     )
     text = completion.choices[0].message.content.strip()
-    return json.loads(text)
+    return parse_json_response(text)
 
 
+async def extract_paper_method(filename: str, paper_text: str) -> Dict[str, Any]:
+    prompt = f"""
+You are extracting a reproducible method from a research paper.
+
+Paper filename: {filename}
+Paper text:
+{paper_text}
+
+Return valid JSON only with this exact high-level shape:
+{{
+  "title": "...",
+  "problem": "...",
+  "datasets": [{{"name": "...", "role": "training|validation|test|benchmark", "notes": "..."}}],
+  "algorithm": {{"name": "...", "summary": "...", "steps": ["..."]}},
+  "parameters": [{{"name": "...", "value": "...", "purpose": "...", "tunable": true}}],
+  "implementation_requirements": ["..."],
+  "reported_results": ["..."],
+  "limitations": ["..."],
+  "confidence_notes": ["Missing or ambiguous details that need confirmation"]
+}}
+
+Rules:
+- Extract only claims supported by the supplied paper text.
+- Use an empty list or "not specified" when the paper does not say.
+- Do not invent parameter values, datasets, or results.
+- Return JSON only; no Markdown.
+""".strip()
+    completion = await client.chat.completions.create(
+        model=MODEL,
+        messages=[{"role": "user", "content": prompt}],
+        extra_headers={
+            "HTTP-Referer": os.getenv("APP_URL", "http://localhost:8000"),
+            "X-Title": os.getenv("APP_TITLE", "Droplet IDE Extension"),
+        },
+    )
+    return parse_json_response(completion.choices[0].message.content.strip())
+
+
+async def recommend_paper_adaptation(
+    repository_method: Dict[str, Any] | None,
+    papers: list[Dict[str, Any]],
+    instruction: str,
+    source_dataset: str | None,
+    target_dataset: str | None,
+    parameter_overrides: Dict[str, Any],
+) -> Dict[str, Any]:
+    paper_context = [
+        {
+            "paper_id": str(paper["id"]),
+            "filename": paper["filename"],
+            "method": paper["method_json"],
+        }
+        for paper in papers
+    ]
+    prompt = f"""
+You are a research engineering lead. Create an evidence-aware implementation plan for
+adapting one or more published methods to an existing repository.
+
+User request: {instruction}
+Source dataset: {source_dataset or "not provided"}
+Target dataset: {target_dataset or "not provided"}
+Required parameter overrides: {json.dumps(parameter_overrides)}
+Repository method schema: {json.dumps(repository_method or {})}
+Selected paper methods: {json.dumps(paper_context)}
+
+Return JSON only in this shape:
+{{
+  "recommendation": "short decision and rationale",
+  "selected_strategy": {{
+    "mode": "single-paper-adaptation|multi-paper-combination|repository-only",
+    "paper_ids": ["paper UUIDs used"],
+    "why": "evidence-grounded rationale"
+  }},
+  "compatibility": {{
+    "dataset": ["required mapping/preprocessing changes"],
+    "parameters": ["parameter changes and validation needs"],
+    "repository": ["likely repository modules or method steps to change"]
+  }},
+  "implementation_plan": [
+    {{"order": 1, "change": "...", "reason": "...", "validation": "..."}}
+  ],
+  "experiment_matrix": [
+    {{"name": "...", "variables": {{"parameter": "value/range"}}, "success_metric": "..."}}
+  ],
+  "risks": ["..."],
+  "questions": ["blocking uncertainty or missing detail"],
+  "evidence": [{{"paper_id": "...", "claim": "..."}}]
+}}
+
+Rules:
+- With multiple papers, recommend a combination only when their extracted methods have compatible roles.
+- Never claim an unprovided experimental result. Mark assumptions and open questions clearly.
+- Respect explicit parameter overrides but flag contradictions with paper evidence.
+- Refer only to the selected paper IDs in evidence and selected_strategy.paper_ids.
+- Return JSON only; no Markdown.
+""".strip()
+    completion = await client.chat.completions.create(
+        model=MODEL,
+        messages=[{"role": "user", "content": prompt}],
+        extra_headers={
+            "HTTP-Referer": os.getenv("APP_URL", "http://localhost:8000"),
+            "X-Title": os.getenv("APP_TITLE", "Droplet IDE Extension"),
+        },
+    )
+    return parse_json_response(completion.choices[0].message.content.strip())

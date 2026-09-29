@@ -7,7 +7,7 @@ from .db.session import get_session
 from .models.jobs import AnalysisJobCreate, AnalysisJobOut, create_job
 from pathlib import Path
 from .services.repo_history import clone_or_open_repo, build_change_bundles, save_history_bundles
-from .routes import code, history, analyze, methods, orchestrator
+from .routes import code, history, analyze, methods, orchestrator, papers
 from .services.code_analyser import analyze_repo_code, save_code_structure
 from .services.history_agent import run_history_summariser
 from .services.orchestrator import run_full_pipeline
@@ -20,6 +20,7 @@ app.include_router(code.router)
 app.include_router(analyze.router)
 app.include_router(methods.router)
 app.include_router(orchestrator.router)
+app.include_router(papers.router)
 
 @app.get("/health")
 async def health():
@@ -56,4 +57,3 @@ async def analyze_repo(
         updated_at=datetime.now(UTC)
 
     )
-    

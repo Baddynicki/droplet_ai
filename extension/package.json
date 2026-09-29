@@ -29,6 +29,18 @@
       {
         "command": "repo-summariser.runFullPipeline",
         "title": "Repo Summariser: Run Full Pipeline"
+      },
+      {
+        "command": "repo-summariser.uploadResearchPaper",
+        "title": "Repo Summariser: Upload Research Paper"
+      },
+      {
+        "command": "repo-summariser.adaptPaperToCurrentRepo",
+        "title": "Repo Summariser: Adapt Paper to Current Repo"
+      },
+      {
+        "command": "repo-summariser.viewPaperAdaptations",
+        "title": "Repo Summariser: View Paper Adaptations"
       }
     ],
     "viewsContainers": {
